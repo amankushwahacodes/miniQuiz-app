@@ -7,6 +7,8 @@ import Error from './Error';
 import StartScreen from "./StartScreen";
 import Question from "./Question";
 import NextButton from "./NextButton";
+import Progress from "./Progress";
+import Finished from "./Finished";
 
 const intitalState = {
   questions: [],
@@ -15,7 +17,8 @@ const intitalState = {
   status: 'loading',
   index: 0,
   answer: null,
-  points: 0
+  points: 0,
+  highscore : 0
 };
 function reducer(state, action) {
   switch (action.type) {
@@ -32,7 +35,11 @@ function reducer(state, action) {
         points: action.payload === question.correctOption ? state.points + question.points : state.points
       }
     case 'nextQuestion':
-      return { ...state, index: state.index + 1,answer:null }
+      return { ...state, index: state.index + 1, answer: null }
+    case 'finish':
+      return { ...state,status : 'finished' ,
+        highscore : state.points > state.highscore ? state.points : state.highscore
+       }
 
     default:
       throw new Error("Action Unknown")
@@ -41,8 +48,10 @@ function reducer(state, action) {
 }
 
 export default function App() {
-  const [{ questions, status, index, answer }, dispatch] = useReducer(reducer, intitalState);
+  const [{ questions, status, index, answer, points,highscore }, dispatch] = useReducer(reducer, intitalState);
   const numQuestions = questions.length;
+
+  const maxPoints = questions.reduce((acc, curr) => acc + curr.points, 0)
 
 
   useEffect(function () {
@@ -67,10 +76,12 @@ export default function App() {
       {status === 'ready' && <StartScreen numQuestions={numQuestions} dispatch={dispatch} />}
       {status === 'active' &&
         <>
-        <Question question={questions[index]} dispatch={dispatch} answer={answer} /> 
-          <NextButton dispatch={dispatch} answer={answer} />
+          <Progress index={index} numQuestions={numQuestions} points={points} maxPoints={maxPoints} answer={answer} />
+          <Question question={questions[index]} dispatch={dispatch} answer={answer} />
+          <NextButton dispatch={dispatch} answer={answer} numQuestions={numQuestions} index={index}/>
         </>
       }
+      {status === 'finished' && <Finished points={points} maxPoints={maxPoints} highscore={highscore} />}
     </Main>
   </div>
 }
